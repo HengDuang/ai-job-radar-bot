@@ -20,31 +20,37 @@ Use one of these:
 });
 
 // 🇸🇬 Fetch Singapore jobs (MyCareersFuture feed)
-bot.onText(/\/sg/, async (msg) => {
+bot.onText(/\/ai/, async (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "🔎 Fetching latest Singapore jobs...");
+  bot.sendMessage(chatId, "🧠 Fetching latest AI jobs...");
 
   try {
-    const rssUrl = "https://www.mycareersfuture.gov.sg/feed";
-    const res = await fetch(rssUrl);
-    const xml = await res.text();
+    const res = await fetch("https://remoteok.com/api");
+    const text = await res.text();
 
-    const parser = new XMLParser();
-    const data = parser.parse(xml);
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (jsonErr) {
+      console.error("⚠️ RemoteOK returned non-JSON:", text.slice(0, 200));
+      throw new Error("RemoteOK API not returning JSON.");
+    }
 
-    const items = data.rss.channel.item.slice(0, 5); // top 5 jobs
+    const jobs = data.slice(1, 5);
+    let textOut = "🧠 *Latest AI Jobs:*\n\n";
 
-    let text = "🇸🇬 *Latest Jobs from MyCareersFuture:*\n\n";
-    items.forEach((item) => {
-      text += `💼 *${item.title}*\n🏢 ${item["dc:creator"] || "Company not listed"}\n🔗 [Apply Here](${item.link})\n\n`;
+    jobs.forEach((j) => {
+      if (j.position && j.company)
+        textOut += `💼 *${j.position}* — ${j.company}\n🌐 [Apply Here](${j.url})\n\n`;
     });
 
-    bot.sendMessage(chatId, text, { parse_mode: "Markdown" });
+    bot.sendMessage(chatId, textOut, { parse_mode: "Markdown" });
   } catch (err) {
-    console.error(err);
-    bot.sendMessage(chatId, "❌ Error fetching Singapore jobs.");
+    console.error("❌ Error fetching AI jobs:", err);
+    bot.sendMessage(chatId, "❌ Sorry, I couldn’t fetch jobs right now. Try again later.");
   }
 });
+
 
 // Keep your existing /ai and /remote commands
 bot.onText(/\/ai/, async (msg) => {
